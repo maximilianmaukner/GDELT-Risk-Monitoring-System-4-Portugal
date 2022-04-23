@@ -10,7 +10,7 @@ from st_aggrid import JsCode
 from st_aggrid.shared import GridUpdateMode, DataReturnMode
 import streamlit.components.v1 as components
 import io
-import datetime
+from datetime import timedelta, datetime
 
 # ---------------------------------------------
 # Initialize Settings
@@ -37,6 +37,30 @@ fil5 = st.sidebar.container()
 with fil1:
     st.markdown("# 📌 Choose Filter Parameters!")
     st.info("Choose wisely . . .")
+
+with fil2:
+    st.subheader("Choose Event Date:")
+    date_range = list(df.Date.drop_duplicates())
+    start = date_range[0]
+    end = date_range[6]
+    #start_date, end_date = st.select_slider("Select Dates V1", options=date_range, value=(start, end))
+
+    list_of_dates = [datetime.strptime(i, '%Y-%m-%d').date() for i in date_range]
+
+    df["DateFormat"] = df.Date.apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+
+    d = st.date_input(
+        "This app is displaying the last week of scraped events, starting from D-1 to D-7. "
+        "You can choose if you want to select the whole week, a date range or a single day.",
+        value=(list_of_dates[0], list_of_dates[6]),
+        min_value=list_of_dates[0], max_value=list_of_dates[6])
+
+    def date_range(start, end):
+        delta = end - start  # as timedelta
+        days = [start + timedelta(days=i) for i in range(delta.days + 1)]
+        return days
+
+    selected_days = date_range(d[0], d[1])
 
 with fil3:
     st.subheader("Choose Event Language:")
@@ -95,7 +119,11 @@ with fil5:
 selections = df.loc[(df.EventRootDescription.isin(selected_category)) &
                     (df.ActionGeo_CountryName.isin(selected_country)) &
                     (df.Is_Translated.isin(selected_language)) &
-                    (df.EventDescription.isin(selected_subcategory))]
+                    (df.EventDescription.isin(selected_subcategory)) &
+                    (df.DateFormat.isin(selected_days))]
+
+#drop DateFormat
+selections = selections.drop("DateFormat", axis=1)
 
 # ---------------------------------------------
 # CORPUS | Plots and Visualizations
