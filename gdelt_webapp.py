@@ -72,7 +72,7 @@ with fil5:
         selected_category = roots
 
     cameo_codes = ["EventDescription", "EventBaseDescription", "EventRootDescription"]
-    unique_cats = df \
+    unique_cats = df\
         .drop_duplicates(subset=cameo_codes)[cameo_codes]
     unique_cats = unique_cats.loc[(unique_cats.EventRootDescription.isin(selected_category))]["EventDescription"]
 
