@@ -3,6 +3,7 @@
 
 import pandas as pd
 import streamlit as st
+import plotly.express as px
 import datetime
 
 # ---------------------------------------------
@@ -126,3 +127,61 @@ with row1:
                 st.metric("AvgNumArticles", value=round(selections.NumArticles.mean(), 2))
             with col4:
                 st.metric("AvgGoldsteinScale", value=round(selections.GoldsteinScale.mean(), 2))
+
+        with container_plots:
+            # plt1, plt2 = st.columns(2)
+            open_plots = st.checkbox("Show me some plots!")
+            # st.write(l)
+            if open_plots == True:
+                bar_plot = selections \
+                    .groupby(["EventRootDescription", "Is_Translated"])["GLOBALEVENTID"] \
+                    .count().reset_index() \
+                    .replace({"Is_Translated": {0: "English Events", 1: "Translated Events"}}) \
+                    .sort_values(by=["GLOBALEVENTID"], ascending=True)
+                fig1 = px.bar(bar_plot,
+                              x="GLOBALEVENTID",
+                              y="EventRootDescription",
+                              color="Is_Translated",
+                              orientation="h",
+                              labels={'GLOBALEVENTID': 'Number of Events', 'EventRootDescription': 'Categories'},
+                              color_discrete_sequence=px.colors.qualitative.T10,
+                              title="Number of Events by Category and Source Language",
+                              template="simple_white")
+                fig1.update_layout(legend=dict(title_text=""))
+                st.plotly_chart(fig1, use_container_width=True)
+
+with row2:
+    # @st.cache
+    with st.expander("Click me to expand/collapse the map!", expanded=True):
+        def scatter_map(df_selections, clat, clon, czoom):
+            scatter_data = px.scatter_mapbox(
+                df_selections,
+                lat="ActionGeo_Lat",
+                lon="ActionGeo_Long",
+                mapbox_style="carto-positron",
+                hover_name="GLOBALEVENTID",
+                # center={"lat": 38.733048, "lon": -9.160745}, -> NOVA IMS
+                center={"lat": clat, "lon": clon},
+                zoom=czoom,
+                # size=df_t['NumSources'] * 1000
+                color="EventRootDescription")
+            scatter_data.update_traces(marker=dict(size=(df_selections["GoldsteinScale"] + 10) * 0.5),
+                                       selector=dict(type='scattermapbox'))
+            scatter_data.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                                       legend=dict(y=0.9))  # height=450, width=950)
+
+            return st.plotly_chart(scatter_data, use_container_width=True)
+
+
+        if len(selected_country) > 1:
+            eventmap = scatter_map(selections, 21, 4.5, 1.5)
+        elif len(selected_country) == 1 and selected_country[0] == "Portugal":
+            eventmap = scatter_map(selections, 37.5, -18, 4.2)
+        elif len(selected_country) == 1 and selected_country[0] == "Spain":
+            eventmap = scatter_map(selections, 40.4, -3.7, 4.8)
+        elif len(selected_country) == 1 and selected_country[0] == "Brazil":
+            eventmap = scatter_map(selections, -15, -55, 2.75)
+        elif len(selected_country) == 1 and selected_country[0] == "Angola":
+            eventmap = scatter_map(selections, -12.5, 17.5, 4.2)
+        else:
+            eventmap = scatter_map(selections, 16, -24, 6)
