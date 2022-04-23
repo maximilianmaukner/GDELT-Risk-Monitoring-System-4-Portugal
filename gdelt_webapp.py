@@ -4,6 +4,12 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+from st_aggrid import AgGrid
+from st_aggrid.grid_options_builder import GridOptionsBuilder
+from st_aggrid import JsCode
+from st_aggrid.shared import GridUpdateMode, DataReturnMode
+import streamlit.components.v1 as components
+import io
 import datetime
 
 # ---------------------------------------------
@@ -185,3 +191,70 @@ with row2:
             eventmap = scatter_map(selections, -12.5, 17.5, 4.2)
         else:
             eventmap = scatter_map(selections, 16, -24, 6)
+
+with row3:
+    # create comments column
+    selections["Comments"] = ""
+
+    gb = GridOptionsBuilder.from_dataframe(selections)
+    gb.configure_pagination()
+    gb.configure_side_bar()
+    gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc="sum", editable=True)
+    gb.configure_column("SOURCEURL",
+        headerName="SOURCEURL",
+        cellRenderer=JsCode('''
+        function(params) {return '<a href="' + params.value + '" target="_blank">'+ params.value+'</a>'}'''))
+    gb.configure_selection(selection_mode="multiple", use_checkbox=True)
+
+    gridOptions = gb.build()
+
+    data = AgGrid(
+        selections,
+        height=500,
+        gridOptions=gridOptions,
+        enable_enterprise_modules=True,
+        allow_unsafe_jscode=True,
+        update_mode=GridUpdateMode.SELECTION_CHANGED | GridUpdateMode.FILTERING_CHANGED,
+        data_return_mode=DataReturnMode.FILTERED_AND_SORTED)
+
+    # create dataframes for selected and filtered output
+    selected_rows = pd.DataFrame(data["selected_rows"])
+    filtered_rows = pd.DataFrame(data["data"])
+
+    # ----------------
+
+    #@st.cache
+    def download_file(df):
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer)
+            writer.save()
+            return buffer
+
+    # optimize, try to make it work with st_btn_select
+    button1, button2, dummy, dummy = st.columns(4)
+
+    with button1:
+        filtered_df = download_file(filtered_rows)
+        st.download_button(
+            label="Export Filtered Table to Excel",
+            data=filtered_df,
+            file_name='filtered_events.xlsx',
+            mime='application/vnd.ms-excel')
+
+    with button2:
+        selected_df = download_file(selected_rows)
+        st.download_button(
+            label="Export Selections to Excel",
+            data=selected_df,
+            file_name='selected_events.xlsx',
+            mime='application/vnd.ms-excel')
+
+with row4:
+    with st.expander("Click me to expand/collapse the embedded article!:", expanded=True):
+        selected_url = data["selected_rows"]
+        if len(selected_url) != 0:
+            url1 = selected_url[0].get("SOURCEURL")
+            with st.spinner("Loading"):
+                components.iframe(url1, height=750, scrolling=True)
+
