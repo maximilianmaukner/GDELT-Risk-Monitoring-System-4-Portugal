@@ -121,17 +121,12 @@ with fil5:
     else:
         selected_subcategory = unique_cats
 
-@st.experimental_memo
-def get_filtered_selection():
-    df_filtered = df.loc[(df.EventRootDescription.isin(selected_category)) &
+selections = df.loc[(df.EventRootDescription.isin(selected_category)) &
                     (df.ActionGeo_CountryName.isin(selected_country)) &
                     (df.Is_Translated.isin(selected_language)) &
                     (df.EventDescription.isin(selected_subcategory)) &
                     (df.DateFormat.isin(selected_days))]
-    df_filtered = df_filtered.drop("DateFormat", axis=1)
-    return df_filtered
-
-selections = get_filtered_selection()
+selections = selections.drop("DateFormat", axis=1)
 
 # ---------------------------------------------
 # CORPUS | Plots and Visualizations
