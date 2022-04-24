@@ -15,8 +15,13 @@ from datetime import timedelta, datetime
 # ---------------------------------------------
 # Initialize Settings
 
-st.set_page_config(layout="wide", page_title="GDELT Risk Manager")
-df = pd.read_csv("gdelt_events.csv")
+st.set_page_config(layout="wide")
+
+@st.experimental_memo
+def get_events():
+    events = pd.read_csv("gdelt_events.csv")
+    return events
+df = get_events()
 
 # ---------------------------------------------
 # SIDEBAR | Filter Options
@@ -116,14 +121,17 @@ with fil5:
     else:
         selected_subcategory = unique_cats
 
-selections = df.loc[(df.EventRootDescription.isin(selected_category)) &
+@st.experimental_memo
+def get_filtered_selection():
+    df_filtered = df.loc[(df.EventRootDescription.isin(selected_category)) &
                     (df.ActionGeo_CountryName.isin(selected_country)) &
                     (df.Is_Translated.isin(selected_language)) &
                     (df.EventDescription.isin(selected_subcategory)) &
                     (df.DateFormat.isin(selected_days))]
+    df_filtered = df_filtered.drop("DateFormat", axis=1)
+    return df_filtered
 
-#drop DateFormat
-selections = selections.drop("DateFormat", axis=1)
+selections = get_filtered_selection()
 
 # ---------------------------------------------
 # CORPUS | Plots and Visualizations
