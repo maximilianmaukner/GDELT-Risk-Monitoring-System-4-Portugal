@@ -225,7 +225,7 @@ with row2:
 
 with row3:
     # create comments column
-    selections["Comments"] = ""
+    #selections["Comments"] = ""
 
     gb = GridOptionsBuilder.from_dataframe(selections)
     gb.configure_pagination()

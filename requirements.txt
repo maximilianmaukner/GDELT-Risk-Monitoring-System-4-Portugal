@@ -1,3 +1,6 @@
 plotly-express==0.4.1
 streamlit-aggrid==0.2.3-2
 xlsxwriter==3.0.3
+streamlit
+pandas
+plotly
