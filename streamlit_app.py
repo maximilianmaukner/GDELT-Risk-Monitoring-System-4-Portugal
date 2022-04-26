@@ -17,7 +17,7 @@ from datetime import timedelta, datetime
 
 st.set_page_config(layout="wide")
 
-@st.experimental_memo
+#@st.experimental_memo
 def get_events():
     events = pd.read_csv("gdelt_events.csv")
     return events
