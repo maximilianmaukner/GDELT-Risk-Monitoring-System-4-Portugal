@@ -44,21 +44,22 @@ with fil1:
     st.info("Choose wisely . . .")
 
 with fil2:
-    st.subheader("Choose Event Date:")
     date_range = list(df.Date.drop_duplicates())
     start = date_range[0]
     end = date_range[6]
     #start_date, end_date = st.select_slider("Select Dates V1", options=date_range, value=(start, end))
 
     list_of_dates = [datetime.strptime(i, '%Y-%m-%d').date() for i in date_range]
-
     df["DateFormat"] = df.Date.apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
 
-    d = st.date_input(
-        "This app is displaying the last week of scraped events, starting from D-1 to D-7. "
-        "You can choose if you want to select the whole week, a date range or a single day.",
-        value=(list_of_dates[0], list_of_dates[6]),
-        min_value=list_of_dates[0], max_value=list_of_dates[6])
+    with st.form(key="date_input"):
+        st.subheader("Choose Event Date:")
+        d = st.date_input(
+            "This app is displaying the last week of scraped events, starting from D-1 to D-7. "
+            "You can choose if you want to select the whole week, a date range or a single day.",
+            value=(list_of_dates[0], list_of_dates[6]),
+            min_value=list_of_dates[0], max_value=list_of_dates[6])
+        submit = st.form_submit_button("Submit")
 
     def date_range(start, end):
         delta = end - start  # as timedelta
@@ -68,13 +69,13 @@ with fil2:
     selected_days = date_range(d[0], d[1])
 
 with fil3:
-    st.subheader("Choose Event Language:")
+    st.subheader("Choose Source Language:")
     all_events = st.selectbox(
         "Here you have the option to select news articles from english or native sources.",
-        ["All events", "Only english events", "Only translated events"])
-    if all_events == "All events":
+        ["All articles", "Only english articles", "Only native articles"])
+    if all_events == "All articles":
         selected_language = [0, 1]
-    elif all_events == "Only english events":
+    elif all_events == "Only english articles":
         selected_language = [0]
     else:
         selected_language = [1]
@@ -128,6 +129,22 @@ selections = df.loc[(df.EventRootDescription.isin(selected_category)) &
                     (df.DateFormat.isin(selected_days))]
 selections = selections.drop("DateFormat", axis=1)
 
+# temporary RENAME COLUMNS
+selections = selections\
+    .fillna("")\
+    .rename(columns={
+        "EventRootDescription": "Event Category",
+        "EventDescription": "Event Subcategory",
+        "Actor1Name": "Actor1 Name",
+        "Actor2Name": "Actor2 Name",
+        "ActionGeo_CountryName": "Action Country",
+        "SOURCEURL": "Source URL",
+        "SourceName": "Source Name",
+    })\
+    .drop(["Actor1Type1Code", "Actor2Type1Code", "Actor1Geo_CountryName", "Actor1Geo_CountryName"], axis=1)\
+    .sort_values(by="Date", ascending=False)
+
+
 # ---------------------------------------------
 # CORPUS | Plots and Visualizations
 
@@ -146,9 +163,8 @@ with row1:
 
     with st.expander("Click me to learn more about this dashboard!"):
         st.markdown("""
-        This app performs simple webscraping of GDELT news data for siutational risk awareness in Portugal.
+        This app performs simple webscraping of GDELT news data for situational risk awareness in Portugal.
         * **Data Source:** [The GDELT Project](https://www.gdeltproject.org)
-        * blabla, describe everything.
         """)
 
     with st.expander("Click me to expand/collapse the metrics!", expanded=True):
@@ -159,11 +175,11 @@ with row1:
             with col1:
                 st.metric("Number of Events", value=f'{selections.GLOBALEVENTID.count():,}')
             with col2:
-                st.metric("AvgTone", value=round(selections.AvgTone.mean(), 2))
+                st.metric("Average Number of Articles", value=round(selections.NumArticles.mean(), 2))
             with col3:
-                st.metric("AvgNumArticles", value=round(selections.NumArticles.mean(), 2))
+                st.metric("Average Tone", value=round(selections.AvgTone.mean(), 2))
             with col4:
-                st.metric("AvgGoldsteinScale", value=round(selections.GoldsteinScale.mean(), 2))
+                st.metric("Average Goldstein Scale", value=round(selections.GoldsteinScale.mean(), 2))
 
         with container_plots:
             # plt1, plt2 = st.columns(2)
@@ -171,16 +187,16 @@ with row1:
             # st.write(l)
             if open_plots == True:
                 bar_plot = selections \
-                    .groupby(["EventRootDescription", "Is_Translated"])["GLOBALEVENTID"] \
+                    .groupby(["Event Category", "Is_Translated"])["GLOBALEVENTID"] \
                     .count().reset_index() \
-                    .replace({"Is_Translated": {0: "English Events", 1: "Translated Events"}}) \
+                    .replace({"Is_Translated": {0: "English Articles", 1: "Native Articles"}}) \
                     .sort_values(by=["GLOBALEVENTID"], ascending=True)
                 fig1 = px.bar(bar_plot,
                               x="GLOBALEVENTID",
-                              y="EventRootDescription",
+                              y="Event Category",
                               color="Is_Translated",
                               orientation="h",
-                              labels={'GLOBALEVENTID': 'Number of Events', 'EventRootDescription': 'Categories'},
+                              labels={'GLOBALEVENTID': 'Number of Events', 'Event Category': 'Categories'},
                               color_discrete_sequence=px.colors.qualitative.T10,
                               title="Number of Events by Category and Source Language",
                               template="simple_white")
@@ -197,15 +213,16 @@ with row2:
                 lon="ActionGeo_Long",
                 mapbox_style="carto-positron",
                 hover_name="GLOBALEVENTID",
+                hover_data=["Event Subcategory", "Date"],
                 # center={"lat": 38.733048, "lon": -9.160745}, -> NOVA IMS
                 center={"lat": clat, "lon": clon},
                 zoom=czoom,
                 # size=df_t['NumSources'] * 1000
-                color="EventRootDescription")
-            scatter_data.update_traces(marker=dict(size=(df_selections["GoldsteinScale"] + 10) * 0.5),
+                color="Event Category")
+            scatter_data.update_traces(marker=dict(size=(df_selections["GoldsteinScale"] + 10) * 1),
                                        selector=dict(type='scattermapbox'))
             scatter_data.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0},
-                                       legend=dict(y=0.9))  # height=450, width=950)
+                                       legend=dict(y=0.93))  # height=450, width=950)
 
             return st.plotly_chart(scatter_data, use_container_width=True)
 
@@ -231,10 +248,8 @@ with row3:
     gb.configure_pagination()
     gb.configure_side_bar()
     gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc="sum", editable=True)
-    gb.configure_column("SOURCEURL",
-        headerName="SOURCEURL",
-        cellRenderer=JsCode('''
-        function(params) {return '<a href="' + params.value + '" target="_blank">'+ params.value+'</a>'}'''))
+    gb.configure_column("Source URL", headerName="Source URL", cellRenderer=JsCode('''
+        function(params) {return '<a href="' + params.value + '" target="_blank">'+ "view article" + '</a>'}'''))
     gb.configure_selection(selection_mode="multiple", use_checkbox=True)
 
     gridOptions = gb.build()
@@ -285,7 +300,7 @@ with row4:
     with st.expander("Click me to expand/collapse the embedded article!:", expanded=True):
         selected_url = data["selected_rows"]
         if len(selected_url) != 0:
-            url1 = selected_url[0].get("SOURCEURL")
+            url1 = selected_url[0].get("Source URL")
             with st.spinner("Loading"):
-                components.iframe(url1, height=750, scrolling=True)
+                components.iframe(url1, height=1000, scrolling=True)
 
