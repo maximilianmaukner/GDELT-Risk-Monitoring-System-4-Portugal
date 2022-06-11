@@ -159,12 +159,22 @@ row3 = st.container()
 row4 = st.container()
 
 with row1:
-    st.title("🌍🇵🇹  GDELT Risk Manager for Portugal!")
+    st.title("🌍🇵🇹  GDELT Situational Awareness for Portugal!")
 
     with st.expander("Click me to learn more about this dashboard!"):
         st.markdown("""
-        This app performs simple webscraping of GDELT news data for situational risk awareness in Portugal.
+        This app performs simple webscraping of news data for situational risk awareness in Portugal and countries
+        that share a special diplomatic, economic, or trade relationship with Portugal. Consequently, this tool acts 
+        as an event explorer to monitor incidents that involved a portuguese entity or an entity from the selected 
+        countries mentioned above. To do so the Global Event Database of Events, Language and Tone was used which
+        compiles the necessary data from freely available online, print and broadcast news sources and makes it 
+        available in a readable and analyzable format. For more information click on the links below. 
+        
+        The dashboard updates every morning at 1AM UTC and is structured as follows: XX 
+        
         * **Data Source:** [The GDELT Project](https://www.gdeltproject.org)
+        * **Metadata & more Information:** [GitHub](https://github.com/maximilianmaukner/GDELT-Risk-Monitoring-System-4-Portugal)
+        
         """)
 
     with st.expander("Click me to expand/collapse the metrics!", expanded=True):
@@ -241,8 +251,7 @@ with row2:
             eventmap = scatter_map(selections, 16, -24, 6)
 
 with row3:
-    # create comments column
-    #selections["Comments"] = ""
+    # Note
 
     gb = GridOptionsBuilder.from_dataframe(selections)
     gb.configure_pagination()
@@ -250,7 +259,7 @@ with row3:
     gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc="sum", editable=True)
     gb.configure_column("Source URL", headerName="Source URL", cellRenderer=JsCode('''
         function(params) {return '<a href="' + params.value + '" target="_blank">'+ "view article" + '</a>'}'''))
-    gb.configure_selection(selection_mode="multiple", use_checkbox=True)
+    gb.configure_selection(selection_mode="single", use_checkbox=True)
 
     gridOptions = gb.build()
 
@@ -286,14 +295,6 @@ with row3:
             label="Export Filtered Table to Excel",
             data=filtered_df,
             file_name='filtered_events.xlsx',
-            mime='application/vnd.ms-excel')
-
-    with button2:
-        selected_df = download_file(selected_rows)
-        st.download_button(
-            label="Export Selections to Excel",
-            data=selected_df,
-            file_name='selected_events.xlsx',
             mime='application/vnd.ms-excel')
 
 with row4:
