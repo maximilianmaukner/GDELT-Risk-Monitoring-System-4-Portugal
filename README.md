@@ -1,2 +1,2 @@
-# GDELT-Risk-Monitoring-System-4-Portugal
+# GDELT Event Explorer for Portugal
 This is a test
