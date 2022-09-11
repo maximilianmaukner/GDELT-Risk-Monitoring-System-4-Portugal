@@ -141,7 +141,7 @@ selections = selections\
         "SOURCEURL": "Source URL",
         "SourceName": "Source Name",
     })\
-    .drop(["Actor1Type1Code", "Actor2Type1Code", "Actor1Geo_CountryName", "Actor1Geo_CountryName"], axis=1)\
+    .drop(["Actor1Type1Code", "Actor2Type1Code", "Actor1Geo_CountryName", "Actor2Geo_CountryName"], axis=1)\
     .sort_values(by="Date", ascending=False)
 
 
@@ -163,14 +163,12 @@ with row1:
 
     with st.expander("Click me to learn more about this dashboard!"):
         st.markdown("""
-        This app performs simple webscraping of news data for situational risk awareness in Portugal and countries
+        This app performs simple daily webscraping of news data for situational risk awareness in Portugal and countries
         that share a special diplomatic, economic, or trade relationship with Portugal. Consequently, this tool acts 
         as an event explorer to monitor incidents that involved a portuguese entity or an entity from the selected 
         countries mentioned above. To do so the Global Event Database of Events, Language and Tone was used which
         compiles the necessary data from freely available online, print and broadcast news sources and makes it 
         available in a readable and analyzable format. For more information click on the links below. 
-        
-        The dashboard updates every morning at 1AM UTC and is structured as follows: XX 
         
         * **Data Source:** [The GDELT Project](https://www.gdeltproject.org)
         * **Metadata & more Information:** [GitHub](https://github.com/maximilianmaukner/GDELT-Risk-Monitoring-System-4-Portugal)
